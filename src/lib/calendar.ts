@@ -402,13 +402,14 @@ function extractUrlFromText(value?: string): string | undefined {
     return undefined;
   }
 
-  const hrefMatch = value.match(/href="([^"]+)"/i);
+  const decodedValue = decodeHtmlEntities(value);
+  const hrefMatch = decodedValue.match(/href="([^"]+)"/i);
 
   if (hrefMatch) {
     return hrefMatch[1];
   }
 
-  const urlMatch = value.match(/https?:\/\/[^\s<]+/i);
+  const urlMatch = decodedValue.match(/https?:\/\/[^\s<]+/i);
   return urlMatch ? urlMatch[0] : undefined;
 }
 
@@ -417,10 +418,15 @@ function cleanDescription(value?: string, knownUrl?: string): string | undefined
     return undefined;
   }
 
-  const htmlDecoded = decodeHtmlEntities(value);
-  const withoutAnchor = htmlDecoded.replace(/<a [^>]*>(.*?)<\/a>/gi, "$1");
-  const withoutUrl = knownUrl ? withoutAnchor.replaceAll(knownUrl, "").trim() : withoutAnchor.trim();
-  const normalizedWhitespace = withoutUrl.replace(/\s+/g, " ").trim();
+  const strippedMarkup = stripMarkup(decodeHtmlEntities(value));
+  const normalizedMarkup = stripMarkup(decodeHtmlEntities(strippedMarkup));
+  const withoutUrl = knownUrl ? normalizedMarkup.replaceAll(knownUrl, "").trim() : normalizedMarkup.trim();
+  const normalizedWhitespace = withoutUrl
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 
   return normalizedWhitespace.length > 0 ? normalizedWhitespace : undefined;
 }
@@ -431,5 +437,16 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&");
+}
+
+function stripMarkup(value: string): string {
+  return value
+    .replace(/<a [^>]*>(.*?)<\/a>/gi, "$1")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
 }

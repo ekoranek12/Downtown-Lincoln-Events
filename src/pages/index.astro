@@ -61,7 +61,19 @@ try {
                   <span class="agenda-item__meta">{formatEventTime(event.start, event.end)}</span>
                   {event.location ? <span class="agenda-item__location">{event.location}</span> : null}
                 </div>
-                {event.description ? <span class="agenda-item__description">{event.description}</span> : null}
+                {event.description ? (
+                  <div class="agenda-item__description-block">
+                    <span class="agenda-item__description" data-description>{event.description}</span>
+                    <button
+                      class="agenda-item__toggle"
+                      type="button"
+                      data-description-toggle
+                      aria-expanded="false"
+                    >
+                      Read more
+                    </button>
+                  </div>
+                ) : null}
                 {event.url ? (
                   <div class="agenda-item__actions">
                     <a class="button-link button-link--secondary agenda-item__link" href={event.url}>
@@ -81,3 +93,28 @@ try {
     }
   </section>
 </BaseLayout>
+
+<script is:inline>
+  const toggleButtons = document.querySelectorAll("[data-description-toggle]");
+
+  toggleButtons.forEach((button) => {
+    const description = button.parentElement?.querySelector("[data-description]");
+
+    if (!(description instanceof HTMLElement)) {
+      return;
+    }
+
+    if (description.scrollHeight <= description.clientHeight + 2) {
+      button.hidden = true;
+      return;
+    }
+
+    button.addEventListener("click", () => {
+      const isExpanded = description.dataset.expanded === "true";
+
+      description.dataset.expanded = isExpanded ? "false" : "true";
+      button.setAttribute("aria-expanded", String(!isExpanded));
+      button.textContent = isExpanded ? "Read more" : "Show less";
+    });
+  });
+</script>

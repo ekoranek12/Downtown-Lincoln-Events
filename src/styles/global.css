@@ -321,9 +321,39 @@ a {
   font-weight: 600;
 }
 
+.agenda-item__description-block {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .agenda-item__description {
+  display: -webkit-box;
   color: var(--color-ink-soft);
   line-height: 1.55;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.agenda-item__description[data-expanded="true"] {
+  display: block;
+  overflow: visible;
+}
+
+.agenda-item__toggle {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent-dark);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-item__toggle:hover {
+  text-decoration: underline;
 }
 
 .agenda-item__actions {
