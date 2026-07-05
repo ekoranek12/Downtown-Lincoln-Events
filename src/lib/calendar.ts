@@ -146,6 +146,11 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
     return [];
   }
 
+  const normalizedTitle = decodeIcsText(event.summary);
+  const normalizedLocation = event.location ? decodeIcsText(event.location) : undefined;
+  const normalizedDescription = event.description ? decodeIcsText(event.description) : undefined;
+  const inferredUrl = event.url ?? extractUrlFromText(normalizedDescription);
+  const cleanedDescription = cleanDescription(normalizedDescription, inferredUrl);
   const startTz = event.startTzid ?? siteConfig.calendarTimeZone;
   const endTz = event.endTzid ?? startTz;
   const start = parseIcsDate(event.dtstart, startTz);
@@ -155,12 +160,12 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
   if (!event.rrule) {
     return [
       {
-        title: event.summary,
+        title: normalizedTitle,
         start,
         end,
-        location: event.location,
-        description: event.description,
-        url: event.url,
+        location: normalizedLocation,
+        description: cleanedDescription,
+        url: inferredUrl,
       },
     ];
   }
@@ -170,12 +175,12 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
   if (rule.freq !== "WEEKLY") {
     return [
       {
-        title: event.summary,
+        title: normalizedTitle,
         start,
         end,
-        location: event.location,
-        description: event.description,
-        url: event.url,
+        location: normalizedLocation,
+        description: cleanedDescription,
+        url: inferredUrl,
       },
     ];
   }
@@ -223,12 +228,12 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
       }
 
       occurrences.push({
-        title: event.summary,
+        title: normalizedTitle,
         start: occurrenceStart,
         end: durationMs > 0 ? new Date(occurrenceStart.getTime() + durationMs) : null,
-        location: event.location,
-        description: event.description,
-        url: event.url,
+        location: normalizedLocation,
+        description: cleanedDescription,
+        url: inferredUrl,
       });
 
       if (occurrences.length >= maxOccurrences) {
@@ -383,4 +388,48 @@ function addDays(date: Date, dayCount: number): Date {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + dayCount);
   return nextDate;
+}
+
+function decodeIcsText(value: string): string {
+  return value
+    .replace(/\\n/gi, "\n")
+    .replace(/\\([,;])/g, "$1")
+    .replace(/\\\\/g, "\\");
+}
+
+function extractUrlFromText(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const hrefMatch = value.match(/href="([^"]+)"/i);
+
+  if (hrefMatch) {
+    return hrefMatch[1];
+  }
+
+  const urlMatch = value.match(/https?:\/\/[^\s<]+/i);
+  return urlMatch ? urlMatch[0] : undefined;
+}
+
+function cleanDescription(value?: string, knownUrl?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const htmlDecoded = decodeHtmlEntities(value);
+  const withoutAnchor = htmlDecoded.replace(/<a [^>]*>(.*?)<\/a>/gi, "$1");
+  const withoutUrl = knownUrl ? withoutAnchor.replaceAll(knownUrl, "").trim() : withoutAnchor.trim();
+  const normalizedWhitespace = withoutUrl.replace(/\s+/g, " ").trim();
+
+  return normalizedWhitespace.length > 0 ? normalizedWhitespace : undefined;
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }

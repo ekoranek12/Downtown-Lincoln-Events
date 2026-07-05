@@ -17,11 +17,11 @@ const currentPath =
     : Astro.url.pathname;
 
 const navItems = [
-  { path: "/", href: "./", label: "Home" },
-  { path: "/calendar/", href: "calendar/", label: "Calendar" },
-  { path: "/submit-event/", href: "submit-event/", label: "Submit Event" },
-  { path: "/subscribe/", href: "subscribe/", label: "Subscribe" },
-  { path: "/about/", href: "about/", label: "About" },
+  { path: "/", href: `${basePath || ""}/`, label: "Home" },
+  { path: "/calendar/", href: `${baseHref}calendar/`, label: "Calendar" },
+  { path: "/submit-event/", href: `${baseHref}submit-event/`, label: "Submit Event" },
+  { path: "/subscribe/", href: `${baseHref}subscribe/`, label: "Subscribe" },
+  { path: "/about/", href: `${baseHref}about/`, label: "About" },
 ];
 ---
 
@@ -40,7 +40,7 @@ const navItems = [
     <div class="page-shell">
       <header class="site-header">
         <div class="site-header__inner">
-          <a class="site-brand" href="./">
+          <a class="site-brand" href={`${basePath || ""}/`}>
             <span class="site-brand__eyebrow">Community bulletin</span>
             <span class="site-brand__name">Downtown Lincoln Events</span>
           </a>
@@ -73,12 +73,12 @@ const navItems = [
         <slot />
       </main>
 
-      <footer class="site-footer">
+      <!-- <footer class="site-footer">
         <div class="site-footer__inner">
           <p>Built as a simple, read-only home for local events.</p>
           <p>Calendar data will come from a public iCalendar feed.</p>
         </div>
-      </footer>
+      </footer> -->
     </div>
   </body>
 </html>
