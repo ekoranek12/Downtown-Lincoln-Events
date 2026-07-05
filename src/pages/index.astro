@@ -1,19 +1,55 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { formatEventDay, formatEventTime, getUpcomingEvents } from "../lib/calendar";
+import { siteConfig } from "../lib/siteConfig";
 
 let upcomingEvents = [];
 let calendarError = false;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const baseHref = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const weeklyEventLimit = Math.max(siteConfig.homepageEventLimit, 60);
+const timeZone = siteConfig.calendarTimeZone;
+const todayKey = getDateKey(new Date(), timeZone);
+const comingUpEndKey = getFutureDateKey(new Date(), timeZone, 6);
 
 try {
-  upcomingEvents = await getUpcomingEvents();
+  upcomingEvents = await getUpcomingEvents(weeklyEventLimit);
 } catch (error) {
   calendarError = true;
   console.error("Unable to load calendar events", error);
+}
+
+const weekEvents = upcomingEvents.filter((event) => {
+  const eventKey = getDateKey(event.start, timeZone);
+  return eventKey >= todayKey && eventKey <= comingUpEndKey;
+});
+
+const todayEvents = weekEvents.filter((event) => getDateKey(event.start, timeZone) === todayKey);
+const laterThisWeekEvents = weekEvents.filter((event) => getDateKey(event.start, timeZone) !== todayKey);
+const categoryOrder = [...new Set(siteConfig.calendarSources.map((source) => source.category))];
+const eventsByCategory = categoryOrder
+  .map((category) => ({
+    category,
+    events: laterThisWeekEvents.filter((event) => event.sourceCategory === category),
+  }))
+  .filter((group) => group.events.length > 0);
+
+function getDateKey(date, timeZone) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(date);
+}
+
+function getFutureDateKey(date, timeZone, dayOffset) {
+  const futureDate = new Date(date);
+  futureDate.setDate(futureDate.getDate() + dayOffset);
+  return getDateKey(futureDate, timeZone);
 }
 ---
 
@@ -26,8 +62,7 @@ try {
       <p class="hero__eyebrow">This week in town</p>
       <h1 class="hero__title">What’s happening in Lincoln, IL.</h1>
       <p class="hero__body">
-        Downtown Lincoln Events is a simple community calendar site built to answer one useful
-        question quickly: what is happening this week?
+        Find food, music, and family fun happening downtown and all around Lincoln!
       </p>
       <div class="hero__actions">
         <a class="button-link button-link--primary" href={`${baseHref}calendar/`}>View full calendar</a>
@@ -37,11 +72,6 @@ try {
   </section>
 
   <section class="page-section">
-    <h2 class="page-section__title">Upcoming Events</h2>
-    <!-- <p class="page-section__lede">
-      The homepage uses an agenda-style list of live upcoming events instead of a month grid.
-    </p> -->
-
     {
       calendarError ? (
         <div class="card">
@@ -50,44 +80,151 @@ try {
             available right now.
           </p>
         </div>
-      ) : upcomingEvents.length > 0 ? (
-        <ul class="agenda-list">
-          {
-            upcomingEvents.map((event) => (
-              <li class="agenda-item">
-                <span class="agenda-item__day">{formatEventDay(event.start)}</span>
-                <span class="agenda-item__title">{event.title}</span>
-                <div class="agenda-item__details">
-                  <span class="agenda-item__meta">{formatEventTime(event.start, event.end)}</span>
-                  {event.location ? <span class="agenda-item__location">{event.location}</span> : null}
+      ) : weekEvents.length > 0 ? (
+        <div class="schedule-sections">
+          <section class="schedule-group">
+            <div class="schedule-group__heading">
+              <h2 class="schedule-group__title">Today</h2>
+              <p class="schedule-group__lede">
+                Here’s what’s happening in Lincoln
+              </p>
+            </div>
+
+            {
+              todayEvents.length > 0 ? (
+                <ul class="agenda-list">
+                  {
+                    todayEvents.map((event) => (
+                      <li class="agenda-item" style={`--event-color: ${event.sourceColor}`}>
+                        <div class="agenda-item__header">
+                          <span class="agenda-item__day">{formatEventDay(event.start)}</span>
+                          <span class="source-pill source-pill--event" style={`--source-color: ${event.sourceColor}`}>
+                            <span class="source-pill__dot" aria-hidden="true"></span>
+                            <span>{event.sourceLabel}</span>
+                            <span class="source-pill__category">{event.sourceCategory}</span>
+                          </span>
+                        </div>
+                        <span class="agenda-item__title">{event.title}</span>
+                        <div class="agenda-item__details">
+                          <span class="agenda-item__meta">{formatEventTime(event.start, event.end, event.allDay)}</span>
+                          {event.location ? <span class="agenda-item__location">{event.location}</span> : null}
+                        </div>
+                        {event.description ? (
+                          <div class="agenda-item__description-block">
+                            <span class="agenda-item__description" data-description>{event.description}</span>
+                            <button
+                              class="agenda-item__toggle"
+                              type="button"
+                              data-description-toggle
+                              aria-expanded="false"
+                            >
+                              Read more
+                            </button>
+                          </div>
+                        ) : null}
+                        {event.url ? (
+                          <div class="agenda-item__actions">
+                            <a class="button-link button-link--secondary agenda-item__link" href={event.url}>
+                              More info
+                            </a>
+                          </div>
+                        ) : null}
+                      </li>
+                    ))
+                  }
+                </ul>
+              ) : (
+                <div class="card card--empty-state">
+                  <p>No events are on the calendar for today.</p>
                 </div>
-                {event.description ? (
-                  <div class="agenda-item__description-block">
-                    <span class="agenda-item__description" data-description>{event.description}</span>
-                    <button
-                      class="agenda-item__toggle"
-                      type="button"
-                      data-description-toggle
-                      aria-expanded="false"
-                    >
-                      Read more
-                    </button>
-                  </div>
-                ) : null}
-                {event.url ? (
-                  <div class="agenda-item__actions">
-                    <a class="button-link button-link--secondary agenda-item__link" href={event.url}>
-                      More info
-                    </a>
-                  </div>
-                ) : null}
-              </li>
-            ))
+              )
+            }
+          </section>
+
+          {
+            eventsByCategory.length > 0 ? (
+              <section class="schedule-group">
+                <div class="schedule-group__heading">
+                  <h2 class="schedule-group__title">Coming Up This Week</h2>
+                  <p class="schedule-group__lede">
+                    Events coming up this week
+                  </p>
+                </div>
+
+                <div class="category-groups">
+                  {
+                    eventsByCategory.map((group) => (
+                      <section class="category-group">
+                        <div class="category-group__heading">
+                          <h4 class="category-group__title">{group.category}</h4>
+                          <span class="category-group__count">
+                            {group.events.length} {group.events.length === 1 ? "event" : "events"}
+                          </span>
+                        </div>
+                        <ul class="agenda-list">
+                          {
+                            group.events.map((event) => (
+                              <li class="agenda-item" style={`--event-color: ${event.sourceColor}`}>
+                                <div class="agenda-item__header">
+                                  <span class="agenda-item__day">{formatEventDay(event.start)}</span>
+                                  <span
+                                    class="source-pill source-pill--event"
+                                    style={`--source-color: ${event.sourceColor}`}
+                                  >
+                                    <span class="source-pill__dot" aria-hidden="true"></span>
+                                    <span>{event.sourceLabel}</span>
+                                    <span class="source-pill__category">{event.sourceCategory}</span>
+                                  </span>
+                                </div>
+                                <span class="agenda-item__title">{event.title}</span>
+                                <div class="agenda-item__details">
+                                  <span class="agenda-item__meta">
+                                    {formatEventTime(event.start, event.end, event.allDay)}
+                                  </span>
+                                  {event.location ? (
+                                    <span class="agenda-item__location">{event.location}</span>
+                                  ) : null}
+                                </div>
+                                {event.description ? (
+                                  <div class="agenda-item__description-block">
+                                    <span class="agenda-item__description" data-description>
+                                      {event.description}
+                                    </span>
+                                    <button
+                                      class="agenda-item__toggle"
+                                      type="button"
+                                      data-description-toggle
+                                      aria-expanded="false"
+                                    >
+                                      Read more
+                                    </button>
+                                  </div>
+                                ) : null}
+                                {event.url ? (
+                                  <div class="agenda-item__actions">
+                                    <a
+                                      class="button-link button-link--secondary agenda-item__link"
+                                      href={event.url}
+                                    >
+                                      More info
+                                    </a>
+                                  </div>
+                                ) : null}
+                              </li>
+                            ))
+                          }
+                        </ul>
+                      </section>
+                    ))
+                  }
+                </div>
+              </section>
+            ) : null
           }
-        </ul>
+        </div>
       ) : (
         <div class="card">
-          <p>No upcoming events are in the calendar yet.</p>
+          <p>No events are scheduled over the next 6 days yet.</p>
         </div>
       )
     }

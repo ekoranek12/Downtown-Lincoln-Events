@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../lib/siteConfig";
+import { primaryCalendarSource } from "../lib/siteConfig";
 ---
 
 <BaseLayout
@@ -23,10 +23,10 @@ import { siteConfig } from "../lib/siteConfig";
         use the app's subscribe by URL option.
       </p>
       <div class="subscribe-actions">
-        <a class="button-link button-link--primary" href={siteConfig.calendarIcsUrl}>
+        <a class="button-link button-link--primary" href={primaryCalendarSource.icsUrl}>
           Open feed URL
         </a>
-        <button class="button-link button-link--secondary copy-button" type="button" data-copy-url={siteConfig.calendarIcsUrl}>
+        <button class="button-link button-link--secondary copy-button" type="button" data-copy-url={primaryCalendarSource.icsUrl}>
           Copy calendar URL
         </button>
       </div>
@@ -36,7 +36,7 @@ import { siteConfig } from "../lib/siteConfig";
         subscription, depending on your device.
       </p>
       <p class="feed-link">
-        Need the full link? <a href={siteConfig.calendarIcsUrl}>Open the calendar feed directly.</a>
+        Need the full link? <a href={primaryCalendarSource.icsUrl}>Open the calendar feed directly.</a>
       </p>
     </div>
   </section>

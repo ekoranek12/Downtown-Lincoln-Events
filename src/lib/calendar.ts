@@ -1,4 +1,4 @@
-import { siteConfig } from "./siteConfig";
+import { siteConfig, type CalendarSourceConfig } from "./siteConfig";
 
 type DateParts = {
   year: number;
@@ -9,13 +9,18 @@ type DateParts = {
   second: number;
 };
 
-type ParsedEvent = {
+export type ParsedEvent = {
   title: string;
   start: Date;
   end: Date | null;
+  allDay: boolean;
   location?: string;
   description?: string;
   url?: string;
+  sourceId: string;
+  sourceLabel: string;
+  sourceCategory: string;
+  sourceColor: string;
 };
 
 type RawEvent = {
@@ -28,6 +33,8 @@ type RawEvent = {
   rrule?: string;
   startTzid?: string;
   endTzid?: string;
+  startIsDateOnly?: boolean;
+  endIsDateOnly?: boolean;
 };
 
 type RuleParts = {
@@ -40,19 +47,44 @@ type RuleParts = {
 const dayCodes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
 export async function getUpcomingEvents(limit = siteConfig.homepageEventLimit): Promise<ParsedEvent[]> {
-  const response = await fetch(siteConfig.calendarIcsUrl);
+  const results = await Promise.allSettled(
+    siteConfig.calendarSources.map(async (source) => {
+      const response = await fetch(source.icsUrl);
 
-  if (!response.ok) {
-    throw new Error(`Calendar request failed with status ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`${source.label} request failed with status ${response.status}`);
+      }
+
+      const icsText = await response.text();
+      return parseCalendar(icsText, source);
+    }),
+  );
+  const calendars = results.flatMap((result) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+
+    console.error("Unable to load calendar source", result.reason);
+    return [];
+  });
+
+  if (calendars.length === 0) {
+    throw new Error("No calendar sources could be loaded.");
   }
 
-  const icsText = await response.text();
-  const calendar = parseCalendar(icsText);
   const now = new Date();
 
-  return calendar
+  return calendars
     .filter((event) => event.end ? event.end >= now : event.start >= now)
-    .sort((left, right) => left.start.getTime() - right.start.getTime())
+    .sort((left, right) => {
+      const startDifference = left.start.getTime() - right.start.getTime();
+
+      if (startDifference !== 0) {
+        return startDifference;
+      }
+
+      return left.sourceLabel.localeCompare(right.sourceLabel);
+    })
     .slice(0, limit);
 }
 
@@ -65,7 +97,11 @@ export function formatEventDay(date: Date): string {
   }).format(date);
 }
 
-export function formatEventTime(start: Date, end: Date | null): string {
+export function formatEventTime(start: Date, end: Date | null, allDay = false): string {
+  if (allDay) {
+    return "All Day";
+  }
+
   const formatter = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -81,7 +117,7 @@ export function formatEventTime(start: Date, end: Date | null): string {
   return `${startText} to ${formatter.format(end)}`;
 }
 
-function parseCalendar(icsText: string): ParsedEvent[] {
+function parseCalendar(icsText: string, source: CalendarSourceConfig): ParsedEvent[] {
   const lines = unfoldLines(icsText);
   const rawEvents: RawEvent[] = [];
   let currentEvent: RawEvent | null = null;
@@ -116,10 +152,12 @@ function parseCalendar(icsText: string): ParsedEvent[] {
       case "DTSTART":
         currentEvent.dtstart = rawValue;
         currentEvent.startTzid = params.TZID;
+        currentEvent.startIsDateOnly = params.VALUE === "DATE" || /^\d{8}$/.test(rawValue);
         break;
       case "DTEND":
         currentEvent.dtend = rawValue;
         currentEvent.endTzid = params.TZID;
+        currentEvent.endIsDateOnly = params.VALUE === "DATE" || /^\d{8}$/.test(rawValue);
         break;
       case "LOCATION":
         currentEvent.location = rawValue;
@@ -138,10 +176,10 @@ function parseCalendar(icsText: string): ParsedEvent[] {
     }
   }
 
-  return rawEvents.flatMap(expandEvent);
+  return rawEvents.flatMap((event) => expandEvent(event, source));
 }
 
-function expandEvent(event: RawEvent): ParsedEvent[] {
+function expandEvent(event: RawEvent, source: CalendarSourceConfig): ParsedEvent[] {
   if (!event.summary || !event.dtstart) {
     return [];
   }
@@ -155,6 +193,7 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
   const endTz = event.endTzid ?? startTz;
   const start = parseIcsDate(event.dtstart, startTz);
   const end = event.dtend ? parseIcsDate(event.dtend, endTz) : null;
+  const allDay = Boolean(event.startIsDateOnly);
   const durationMs = end ? end.getTime() - start.getTime() : 0;
 
   if (!event.rrule) {
@@ -163,9 +202,14 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
         title: normalizedTitle,
         start,
         end,
+        allDay,
         location: normalizedLocation,
         description: cleanedDescription,
         url: inferredUrl,
+        sourceId: source.id,
+        sourceLabel: source.label,
+        sourceCategory: source.category,
+        sourceColor: source.color,
       },
     ];
   }
@@ -178,9 +222,14 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
         title: normalizedTitle,
         start,
         end,
+        allDay,
         location: normalizedLocation,
         description: cleanedDescription,
         url: inferredUrl,
+        sourceId: source.id,
+        sourceLabel: source.label,
+        sourceCategory: source.category,
+        sourceColor: source.color,
       },
     ];
   }
@@ -231,9 +280,14 @@ function expandEvent(event: RawEvent): ParsedEvent[] {
         title: normalizedTitle,
         start: occurrenceStart,
         end: durationMs > 0 ? new Date(occurrenceStart.getTime() + durationMs) : null,
+        allDay,
         location: normalizedLocation,
         description: cleanedDescription,
         url: inferredUrl,
+        sourceId: source.id,
+        sourceLabel: source.label,
+        sourceCategory: source.category,
+        sourceColor: source.color,
       });
 
       if (occurrences.length >= maxOccurrences) {
@@ -389,6 +443,7 @@ function addDays(date: Date, dayCount: number): Date {
   nextDate.setDate(nextDate.getDate() + dayCount);
   return nextDate;
 }
+
 
 function decodeIcsText(value: string): string {
   return value
