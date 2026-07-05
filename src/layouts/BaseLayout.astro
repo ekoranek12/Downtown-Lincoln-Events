@@ -11,6 +11,15 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const baseHref = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const generatedAt = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Chicago",
+  timeZoneName: "short",
+}).format(new Date());
 const currentPath =
   Astro.url.pathname.startsWith(basePath) && basePath.length > 0
     ? Astro.url.pathname.slice(basePath.length) || "/"
@@ -73,12 +82,11 @@ const navItems = [
         <slot />
       </main>
 
-      <!-- <footer class="site-footer">
+      <footer class="site-footer">
         <div class="site-footer__inner">
-          <p>Built as a simple, read-only home for local events.</p>
-          <p>Calendar data will come from a public iCalendar feed.</p>
+          <p>Last updated {generatedAt}</p>
         </div>
-      </footer> -->
+      </footer>
     </div>
   </body>
 </html>
