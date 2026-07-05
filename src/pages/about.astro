@@ -1,0 +1,36 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="About"
+  description="About the Downtown Lincoln Events project and its simple community-focused approach."
+>
+  <section class="page-section">
+    <h1 class="page-section__title">About</h1>
+    <p class="page-section__lede">
+      Downtown Lincoln Events is meant to be a simple, fast, community-friendly place to browse
+      what is happening around town.
+    </p>
+  </section>
+
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="card">
+        <h2>The idea</h2>
+        <p>
+          Event management stays in one public calendar, while the website gives residents a more
+          welcoming and readable way to explore upcoming plans.
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>The approach</h2>
+        <p>
+          The site will stay static and inexpensive to host. Astro will fetch the calendar feed at
+          build time and generate pages from that data.
+        </p>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

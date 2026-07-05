@@ -1,0 +1,59 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../lib/siteConfig";
+---
+
+<BaseLayout
+  title="Submit Event"
+  description="Residents and organizations will be able to submit events for review."
+>
+  <section class="page-section">
+    <h1 class="page-section__title">Submit an Event</h1>
+    <p class="page-section__lede">
+      Community groups, small businesses, and local organizers will be able to share events using
+      a simple submission form.
+    </p>
+  </section>
+
+  <section class="page-section">
+    <div class="card">
+      <h2>Share a local event</h2>
+      <p>
+        Use the submission form to send event details for review. This keeps the public calendar
+        curated while still making it easy for community groups, small businesses, and organizers
+        to contribute.
+      </p>
+      <p>
+        Please include the event title, date, time, location, and any short description or link
+        that would help people decide whether to attend.
+      </p>
+      <div class="submit-actions">
+        <a class="button-link button-link--primary" href={siteConfig.submissionFormUrl}>
+          Open submission form
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="card">
+        <h2>What to expect</h2>
+        <ul class="info-list">
+          <li>Submissions are reviewed before they are added to the public calendar.</li>
+          <li>Accepted events will appear on the site through the shared calendar feed.</li>
+          <li>Not every submission is guaranteed to be published.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Helpful details</h2>
+        <ul class="info-list">
+          <li>Use a clear event name that people will recognize.</li>
+          <li>Include a precise start time and location whenever possible.</li>
+          <li>Add a short description if the event needs context.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

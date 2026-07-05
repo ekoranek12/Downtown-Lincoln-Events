@@ -1,0 +1,108 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { formatEventDay, formatEventTime, getUpcomingEvents } from "../lib/calendar";
+
+let upcomingEvents = [];
+let calendarError = false;
+
+try {
+  upcomingEvents = await getUpcomingEvents();
+} catch (error) {
+  calendarError = true;
+  console.error("Unable to load calendar events", error);
+}
+---
+
+<BaseLayout
+  title="Home"
+  description="A simple local guide to what is happening in Downtown Lincoln this week."
+>
+  <section class="hero">
+    <div>
+      <p class="hero__eyebrow">This week in town</p>
+      <h1 class="hero__title">A better front porch for local events.</h1>
+      <p class="hero__body">
+        Downtown Lincoln Events is a simple community calendar site built to answer one useful
+        question quickly: what is happening this week?
+      </p>
+      <div class="hero__actions">
+        <a class="button-link button-link--primary" href="calendar/">View full calendar</a>
+        <a class="button-link button-link--secondary" href="submit-event/">Submit an event</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Live calendar feed</h2>
+      <p>
+        The homepage is now set up to pull upcoming events from your public Google Calendar ICS
+        feed during the Astro build.
+      </p>
+      <p>
+        If the feed is unavailable during a build, this section will show a simple fallback message
+        instead of breaking the whole site.
+      </p>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <h2 class="page-section__title">Upcoming Events</h2>
+    <p class="page-section__lede">
+      The homepage uses an agenda-style list of live upcoming events instead of a month grid.
+    </p>
+
+    {
+      calendarError ? (
+        <div class="card">
+          <p>
+            The calendar feed could not be reached during this build, so upcoming events are not
+            available right now.
+          </p>
+        </div>
+      ) : upcomingEvents.length > 0 ? (
+        <ul class="agenda-list">
+          {
+            upcomingEvents.map((event) => (
+              <li class="agenda-item">
+                <span class="agenda-item__day">{formatEventDay(event.start)}</span>
+                <span class="agenda-item__title">{event.title}</span>
+                <span class="agenda-item__meta">
+                  {formatEventTime(event.start, event.end)}
+                  {event.location ? ` at ${event.location}` : ""}
+                </span>
+                {
+                  event.description ? (
+                    <span class="agenda-item__description">{event.description}</span>
+                  ) : null
+                }
+              </li>
+            ))
+          }
+        </ul>
+      ) : (
+        <div class="card">
+          <p>No upcoming events are in the calendar yet.</p>
+        </div>
+      )
+    }
+  </section>
+
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="card">
+        <h3>How it works</h3>
+        <p>
+          Event management stays in a public calendar, and Astro turns that feed into a cleaner
+          browsing experience at build time.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3>What comes next</h3>
+        <p>
+          The next improvements are wiring in the calendar embed, adding the submission form link,
+          and refining how event details are displayed.
+        </p>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

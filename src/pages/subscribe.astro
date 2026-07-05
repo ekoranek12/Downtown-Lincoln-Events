@@ -1,0 +1,119 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../lib/siteConfig";
+---
+
+<BaseLayout
+  title="Subscribe"
+  description="Instructions for subscribing to the public events calendar from other apps."
+>
+  <section class="page-section">
+    <h1 class="page-section__title">Subscribe</h1>
+    <p class="page-section__lede">
+      Use the public calendar feed to subscribe from your own calendar app. Subscription steps work
+      most reliably on desktop, and phone behavior can vary by app and browser.
+    </p>
+  </section>
+
+  <section class="page-section">
+    <div class="card">
+      <h2>Calendar URL</h2>
+      <p>
+        This is the public iCalendar feed URL. In most apps, the best path is to copy this link and
+        use the app's subscribe by URL option.
+      </p>
+      <div class="subscribe-actions">
+        <a class="button-link button-link--primary" href={siteConfig.calendarIcsUrl}>
+          Open feed URL
+        </a>
+        <button class="button-link button-link--secondary copy-button" type="button" data-copy-url={siteConfig.calendarIcsUrl}>
+          Copy calendar URL
+        </button>
+      </div>
+      <p class="copy-status" data-copy-status aria-live="polite"></p>
+      <p class="subscribe-note">
+        Opening the link may download or import a calendar file instead of creating a live
+        subscription, depending on your device.
+      </p>
+      <p class="feed-link">
+        Need the full link? <a href={siteConfig.calendarIcsUrl}>Open the calendar feed directly.</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="card-grid">
+      <article class="card">
+        <h2>Apple Calendar</h2>
+        <ol class="steps-list">
+          <li>Copy the calendar URL above.</li>
+          <li>Open Apple Calendar on your Mac.</li>
+          <li>Choose <strong>File &gt; New Calendar Subscription...</strong></li>
+          <li>Paste the URL and confirm the subscription.</li>
+        </ol>
+      </article>
+
+      <article class="card">
+        <h2>Google Calendar</h2>
+        <ol class="steps-list">
+          <li>Copy the calendar URL above.</li>
+          <li>Open Google Calendar on desktop.</li>
+          <li>Go to <strong>Add calendar</strong>, then choose <strong>From URL</strong>.</li>
+          <li>Paste the URL to subscribe.</li>
+        </ol>
+        <p>
+          <a class="button-link button-link--secondary" href="https://calendar.google.com/calendar/u/0/r/settings/addbyurl">
+            Open Google Calendar settings
+          </a>
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>Outlook</h2>
+        <ol class="steps-list">
+          <li>Copy the calendar URL above.</li>
+          <li>Open Outlook Calendar.</li>
+          <li>Choose <strong>Add calendar</strong>, then <strong>Subscribe from web</strong>.</li>
+          <li>Paste the URL and save it.</li>
+        </ol>
+        <p>
+          <a class="button-link button-link--secondary" href="https://outlook.live.com/calendar/0/addcalendar">
+            Open Outlook Calendar
+          </a>
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>Phones and Other Apps</h2>
+        <p>
+          Many apps support subscribed calendars, but mobile handling of ICS links can be
+          inconsistent.
+        </p>
+        <ul class="info-list">
+          <li>Desktop setup is usually the most reliable option.</li>
+          <li>On phones, tapping the link may import or preview the feed instead of subscribing.</li>
+          <li>If your app supports calendar subscriptions, look for an add by URL option.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+</BaseLayout>
+<script is:inline>
+  const copyButton = document.querySelector("[data-copy-url]");
+  const statusElement = document.querySelector("[data-copy-status]");
+
+  copyButton?.addEventListener("click", async () => {
+    const url = copyButton.getAttribute("data-copy-url");
+
+    if (!url || !statusElement) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      statusElement.textContent = "Calendar URL copied.";
+    } catch {
+      statusElement.textContent = "Copy failed. You can use the direct feed link below.";
+    }
+  });
+</script>

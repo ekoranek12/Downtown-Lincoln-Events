@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../lib/siteConfig";
+---
+
+<BaseLayout
+  title="Calendar"
+  description="View the public community calendar in an embedded monthly calendar view."
+>
+  <section class="page-section">
+    <h1 class="page-section__title">Calendar</h1>
+    <p class="page-section__lede">
+      This page will embed the public calendar for anyone who prefers a traditional month or agenda
+      view.
+    </p>
+  </section>
+
+  <section class="page-section">
+    <div class="card">
+      <h2>Monthly view</h2>
+      <p>
+        This embedded calendar comes directly from the public Google Calendar, so it stays aligned
+        with the same source used for the homepage event list.
+      </p>
+      <iframe
+        class="embed-frame"
+        src={siteConfig.calendarEmbedUrl}
+        title="Downtown Lincoln Events calendar"
+        loading="lazy"
+        frameborder="0"
+        scrolling="no"
+      ></iframe>
+    </div>
+  </section>
+</BaseLayout>

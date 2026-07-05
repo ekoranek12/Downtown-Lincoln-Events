@@ -1,0 +1,84 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Community events in Downtown Lincoln." } = Astro.props;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const baseHref = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const currentPath =
+  Astro.url.pathname.startsWith(basePath) && basePath.length > 0
+    ? Astro.url.pathname.slice(basePath.length) || "/"
+    : Astro.url.pathname;
+
+const navItems = [
+  { path: "/", href: "./", label: "Home" },
+  { path: "/calendar/", href: "calendar/", label: "Calendar" },
+  { path: "/submit-event/", href: "submit-event/", label: "Submit Event" },
+  { path: "/subscribe/", href: "subscribe/", label: "Subscribe" },
+  { path: "/about/", href: "about/", label: "About" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href={`${baseHref}favicon.svg`} />
+    <link rel="icon" href={`${baseHref}favicon.ico`} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <title>{title} | Downtown Lincoln Events</title>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <div class="site-header__inner">
+          <a class="site-brand" href="./">
+            <span class="site-brand__eyebrow">Community bulletin</span>
+            <span class="site-brand__name">Downtown Lincoln Events</span>
+          </a>
+
+          <nav aria-label="Primary navigation" class="site-nav">
+            <ul class="site-nav__list">
+              {
+                navItems.map((item) => {
+                  const isActive = currentPath === item.path;
+
+                  return (
+                    <li>
+                      <a
+                        class:list={["site-nav__link", { "site-nav__link--active": isActive }]}
+                        href={item.href}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {item.label}
+                      </a>
+                    </li>
+                  );
+                })
+              }
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      <main class="site-main">
+        <slot />
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <p>Built as a simple, read-only home for local events.</p>
+          <p>Calendar data will come from a public iCalendar feed.</p>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
